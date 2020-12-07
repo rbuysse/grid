@@ -40,116 +40,116 @@ pipeline {
     }
 
     stages {
-        stage('Check Whitelist') {
-            steps {
-                readTrusted 'bin/whitelist'
-                sh './bin/whitelist "$CHANGE_AUTHOR" /etc/jenkins-authorized-builders'
-            }
-            when {
-                not {
-                    branch 'master'
-                }
-            }
-        }
+        // stage('Check Whitelist') {
+        //     steps {
+        //         readTrusted 'bin/whitelist'
+        //         sh './bin/whitelist "$CHANGE_AUTHOR" /etc/jenkins-authorized-builders'
+        //     }
+        //     when {
+        //         not {
+        //             branch 'master'
+        //         }
+        //     }
+        // }
 
-        stage('Check for Signed-Off Commits') {
-            steps {
-                sh '''#!/bin/bash -l
-                    if [ -v CHANGE_URL ] ;
-                    then
-                        temp_url="$(echo $CHANGE_URL |sed s#github.com/#api.github.com/repos/#)/commits"
-                        pull_url="$(echo $temp_url |sed s#pull#pulls#)"
+        // stage('Check for Signed-Off Commits') {
+        //     steps {
+        //         sh '''#!/bin/bash -l
+        //             if [ -v CHANGE_URL ] ;
+        //             then
+        //                 temp_url="$(echo $CHANGE_URL |sed s#github.com/#api.github.com/repos/#)/commits"
+        //                 pull_url="$(echo $temp_url |sed s#pull#pulls#)"
 
-                        IFS=$'\n'
-                        for m in $(curl -s "$pull_url" | grep "message") ; do
-                            if echo "$m" | grep -qi signed-off-by:
-                            then
-                              continue
-                            else
-                              echo "FAIL: Missing Signed-Off Field"
-                              echo "$m"
-                              exit 1
-                            fi
-                        done
-                        unset IFS;
-                    fi
-                '''
-            }
-        }
+        //                 IFS=$'\n'
+        //                 for m in $(curl -s "$pull_url" | grep "message") ; do
+        //                     if echo "$m" | grep -qi signed-off-by:
+        //                     then
+        //                       continue
+        //                     else
+        //                       echo "FAIL: Missing Signed-Off Field"
+        //                       echo "$m"
+        //                       exit 1
+        //                     fi
+        //                 done
+        //                 unset IFS;
+        //             fi
+        //         '''
+        //     }
+        // }
 
-        stage("Build Grid UI Test Dependencies") {
-            steps {
-                sh 'docker build ui/grid-ui -f ui/grid-ui/docker/test/Dockerfile -t grid-ui:$ISOLATION_ID'
-                sh 'docker build . -f ui/saplings/product/test/Dockerfile -t product-sapling:$ISOLATION_ID'
-            }
-        }
+        // stage("Build Grid UI Test Dependencies") {
+        //     steps {
+        //         sh 'docker build ui/grid-ui -f ui/grid-ui/docker/test/Dockerfile -t grid-ui:$ISOLATION_ID'
+        //         sh 'docker build . -f ui/saplings/product/test/Dockerfile -t product-sapling:$ISOLATION_ID'
+        //     }
+        // }
 
-        stage("Run Lint on Grid UI") {
-            steps {
-                sh 'docker run --rm --env CI=true grid-ui:$ISOLATION_ID yarn lint'
-                sh 'docker run --rm --env CI=true product-sapling:$ISOLATION_ID yarn lint'
-            }
-        }
+        // stage("Run Lint on Grid UI") {
+        //     steps {
+        //         sh 'docker run --rm --env CI=true grid-ui:$ISOLATION_ID yarn lint'
+        //         sh 'docker run --rm --env CI=true product-sapling:$ISOLATION_ID yarn lint'
+        //     }
+        // }
 
-        stage("Run Grid UI tests") {
-            steps {
-                sh 'docker run --rm --env CI=true grid-ui:$ISOLATION_ID yarn test'
-                sh 'docker run --rm --env CI=true product-sapling:$ISOLATION_ID yarn test'
-            }
-        }
+        // stage("Run Grid UI tests") {
+        //     steps {
+        //         sh 'docker run --rm --env CI=true grid-ui:$ISOLATION_ID yarn test'
+        //         sh 'docker run --rm --env CI=true product-sapling:$ISOLATION_ID yarn test'
+        //     }
+        // }
 
-        stage("Run Lint on Grid") {
-            steps {
-                sh 'docker build . -f docker/lint -t lint-grid:$ISOLATION_ID'
-                sh 'docker run --rm -v $(pwd):/project/grid lint-grid:$ISOLATION_ID'
-            }
-        }
+        // stage("Run Lint on Grid") {
+        //     steps {
+        //         sh 'docker build . -f docker/lint -t lint-grid:$ISOLATION_ID'
+        //         sh 'docker run --rm -v $(pwd):/project/grid lint-grid:$ISOLATION_ID'
+        //     }
+        // }
 
-        // Use a docker container to build and protogen, so that the Jenkins
-        // environment doesn't need all the dependencies.
-        stage("Build Grid Test Dependencies") {
-            steps {
-                sh 'REPO_VERSION=$(./bin/get_version) docker-compose -f docker-compose.yaml build --force-rm'
-                sh 'docker-compose -f docker/compose/grid_tests.yaml build --force-rm'
-            }
-        }
+        // // Use a docker container to build and protogen, so that the Jenkins
+        // // environment doesn't need all the dependencies.
+        // stage("Build Grid Test Dependencies") {
+        //     steps {
+        //         sh 'REPO_VERSION=$(./bin/get_version) docker-compose -f docker-compose.yaml build --force-rm'
+        //         sh 'docker-compose -f docker/compose/grid_tests.yaml build --force-rm'
+        //     }
+        // }
 
-        stage("Run Grid unit tests") {
-            steps {
-                sh 'docker-compose -f docker/compose/grid_tests.yaml up --abort-on-container-exit --exit-code-from grid_tests'
-                sh 'docker-compose -f docker/compose/grid_tests.yaml down'
-            }
-        }
+        // stage("Run Grid unit tests") {
+        //     steps {
+        //         sh 'docker-compose -f docker/compose/grid_tests.yaml up --abort-on-container-exit --exit-code-from grid_tests'
+        //         sh 'docker-compose -f docker/compose/grid_tests.yaml down'
+        //     }
+        // }
 
-        stage("Run integration tests") {
-            steps {
-                sh './bin/run_integration_tests'
-            }
-        }
+        // stage("Run integration tests") {
+        //     steps {
+        //         sh './bin/run_integration_tests'
+        //     }
+        // }
 
-        stage("Build gridd with experimental features") {
-            steps {
-                sh 'ISOLATION_ID=$ISOLATION_ID"experimental" CARGO_ARGS="-- --features experimental" docker-compose -f docker-compose.yaml build gridd'
-            }
-        }
+        // stage("Build gridd with experimental features") {
+        //     steps {
+        //         sh 'ISOLATION_ID=$ISOLATION_ID"experimental" CARGO_ARGS="-- --features experimental" docker-compose -f docker-compose.yaml build gridd'
+        //     }
+        // }
 
-        stage("Create git archive") {
-            steps {
-                sh '''
-                    REPO=$(git remote show -n origin | grep Fetch | awk -F'[/.]' '{print $6}')
-                    VERSION=`git describe --dirty`
-                    git archive HEAD --format=zip -9 --output=$REPO-$VERSION.zip
-                    git archive HEAD --format=tgz -9 --output=$REPO-$VERSION.tgz
-                '''
-            }
-        }
+        // stage("Create git archive") {
+        //     steps {
+        //         sh '''
+        //             REPO=$(git remote show -n origin | grep Fetch | awk -F'[/.]' '{print $6}')
+        //             VERSION=`git describe --dirty`
+        //             git archive HEAD --format=zip -9 --output=$REPO-$VERSION.zip
+        //             git archive HEAD --format=tgz -9 --output=$REPO-$VERSION.tgz
+        //         '''
+        //     }
+        // }
 
-        stage("Build artifacts") {
-            steps {
-                sh 'mkdir -p build/debs'
-                sh 'docker-compose -f docker/compose/copy-artifacts.yaml up'
-            }
-        }
+        // stage("Build artifacts") {
+        //     steps {
+        //         sh 'mkdir -p build/debs'
+        //         sh 'docker-compose -f docker/compose/copy-artifacts.yaml up'
+        //     }
+        // }
 
         stage('Publishing artifacts') {
             when {

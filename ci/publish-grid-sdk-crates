@@ -28,4 +28,4 @@ CMD cargo login $CARGO_CRED \
  && sed -i -e "0,/version.*$/ s/version.*$/version\ =\ \"$REPO_VERSION\"/" Cargo.toml \
  && cargo clean \
  && cargo test \
- && cargo publish
+ && cargo publish --dry-run
